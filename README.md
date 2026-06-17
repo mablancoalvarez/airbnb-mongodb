@@ -77,15 +77,11 @@ También podríamos hacerlo de esta manera:
   Ordenados por precio de forma ascendente.
   Sólo muestra: nombre, precio, camas y la localidad (address.market).
 
-```db.listingsAndReviews.aggregate([
-  { $match: { "address.country": "Spain" } },
-  { $sort: {price:1}},
-  { $limit: 10 },
-  { $project: {
-    _id:0, name:1,price:1, beds:1, "address.market":1
-  }}
-])
-
+```
+db.listingsAndReviews.find(
+  { "address.country": "Spain" },
+  { _id: 0, name: 1, price: 1, beds: 1, "address.market": 1 }
+).sort({ price: 1 }).limit(10);
 ```
 
 ## 4. Filtrando
@@ -95,66 +91,40 @@ También podríamos hacerlo de esta manera:
   Dos cuartos de baño o más.
   Sólo muestra: nombre, precio, camas y baños.
 
-```db.listingsAndReviews.aggregate(
-  [
-    {
-      $match: {
-        beds: {
-          $eq: 4
-        },
-        bathrooms:{
-          $gte: 2
-        }
-      }
-    },
-     {
-      $project: {
-        '_id': 0,
-        'name': 1,
-        'price': 1,
-        'beds': 1,
-        'bathrooms': 1
-      }
-    }
-  ]
+```
+db.listingsAndReviews.find(
+  {
+    beds: 4,
+    bathrooms: { $gte: 2 }
+  },
+  {
+    _id: 0,
+    name: 1,
+    price: 1,
+    beds: 1,
+    bathrooms: 1
+  }
 )
-```
-
-Podríamos plantearnos el decimal de bathrooms pasarlo a entero, para mostrarlo en el resultado final:
-
-```
- bathrooms: { $toInt: "$bathrooms" }
-
 ```
 
 - Aunque estamos de viaje no queremos estar desconectados, así que necesitamos que el alojamiento también tenga conexión wifi. A los requisitos anteriores, hay que añadir que el alojamiento tenga wifi.
   Sólo muestra: nombre, precio, camas, baños y servicios (amenities).
 
 ```
-db.listingsAndReviews.aggregate(
-  [
-    {
-      $match: {
-        beds: {
-          $eq: 4
-        },
-        bathrooms:{
-          $gte: 2
-        },
-        amenities: "Wifi"
-      }
-    },
-     {
-      $project: {
-        '_id': 0,
-        'name': 1,
-        'price': 1,
-        'beds': 1,
-        bathrooms: 1,
-        amenities:1
-      }
-    }
-  ]
+db.listingsAndReviews.find(
+  {
+    beds: 4,
+    bathrooms: { $gte: 2 },
+    amenities: "Wifi"
+  },
+  {
+    _id: 0,
+    name: 1,
+    price: 1,
+    beds: 1,
+    bathrooms: 1,
+    amenities:1
+  }
 )
 
 ```
@@ -164,31 +134,22 @@ db.listingsAndReviews.aggregate(
 
 ```
 
-db.listingsAndReviews.aggregate(
-  [
-    {
-      $match: {
-        beds: {
-          $eq: 4
-        },
-        bathrooms:{
-          $gte: 2
-        },
-        amenities: {$all: ["Wifi", "Pets allowed"]}
-      }
-    },
-     {
-      $project: {
-        '_id': 0,
-        'name': 1,
-        'price': 1,
-        'beds': 1,
-        bathrooms: 1,
-        amenities:1
-      }
-    }
-  ]
+ db.listingsAndReviews.find(
+  {
+    beds: 4,
+    bathrooms: { $gte: 2 },
+    amenities: { $all: ["Wifi", "Pets allowed"] }
+  },
+  {
+    _id: 0,
+    name: 1,
+    price: 1,
+    beds: 1,
+    bathrooms: 1,
+    amenities:1
+  }
 )
+
 
 ```
 
@@ -197,40 +158,31 @@ db.listingsAndReviews.aggregate(
 
 ```
 
-db.listingsAndReviews.aggregate(
-  [
-    {
-      $match: {
-        beds: {
-          $eq: 4
-        },
-        bathrooms:{
-          $gte: 2
-        },
-        amenities: {$all: ["Wifi", "Pets allowed"]},
-        $or: [
-          { "address.market": "Barcelona" },
-          { "address.country": "Portugal" }
-        ],
-        price: {$lte:50},
-        "review_scores.review_scores_rating" : {$gte:88}
-      }
-    },
-     {
-      $project: {
-        '_id': 0,
-        'name': 1,
-        'price': 1,
-        'beds': 1,
-        bathrooms: 1,
-        rating: "$review_scores.review_scores_rating",
-        localidad:"$address.market",
-        pais:"$address.country"
+db.listingsAndReviews.find(
+  {
+    beds: 4,
+    bathrooms: { $gte: 2 },
+    amenities: { $all: ["Wifi", "Pets allowed"] },
+    $or: [
+      { "address.market": "Barcelona" },
+      { "address.country": "Portugal" }
+    ],
+    price: { $lte: 50 },
+    "review_scores.review_scores_rating": { $gte: 88 }
+  },
+  {
+    _id: 0,
+    name: 1,
+    price: 1,
+    beds: 1,
+    bathrooms: 1,
+    "review_scores.review_scores_rating": 1,
+    "address.market": 1,
+    "address.country": 1
 
-      }
-    }
-  ]
+  }
 )
+
 
 ```
 
@@ -238,41 +190,36 @@ db.listingsAndReviews.aggregate(
   Sólo muestra: nombre, precio, camas, baños, rating, si el huésped es superhost, depósito de seguridad, localidad y país.
 
 ```
-db.listingsAndReviews.aggregate(
-  [
-    {
-      $match: {
-        beds:4,
-        bathrooms:{
-          $gte: 2
-        },
-        amenities: {$all: ["Wifi", "Pets allowed"]},
-        $or: [
-          { "address.market": "Barcelona" },
-          { "address.country": "Portugal" }
-        ],
-        price: {$lte:50},
-        "review_scores.review_scores_rating" : {$gte:88},
-        "host.host_is_superhost":true,
-        "security_deposit": 0
-      }
-    },
-     {
-      $project: {
-        '_id': 0,
-        'name': 1,
-        'price': 1,
-        'beds': 1,
-        bathrooms: 1,
-        rating: "$review_scores.review_scores_rating",
-        isSuperhost:"$host.host_is_superhost",
-        localidad:"$address.market",
-        pais:"$address.country",
-        security_deposit:1
-      }
-    }
-  ]
+db.listingsAndReviews.find(
+  {
+    beds: 4,
+    bathrooms: { $gte: 2 },
+    amenities: { $all: ["Wifi", "Pets allowed"] },
+    $or: [
+      { "address.market": "Barcelona" },
+      { "address.country": "Portugal" }
+    ],
+    price: { $lte: 50 },
+    "review_scores.review_scores_rating": { $gte: 88 },
+    "host.host_is_superhost": true,
+    security_deposit: 0
+
+  },
+  {
+    _id: 0,
+    name: 1,
+    price: 1,
+    beds: 1,
+    bathrooms: 1,
+    "review_scores.review_scores_rating": 1,
+    "address.market": 1,
+    "address.country": 1,
+    "host.host_is_superhost": 1,
+    security_deposit: 1,
+
+  }
 )
+
 ```
 
 ## Agregaciones
